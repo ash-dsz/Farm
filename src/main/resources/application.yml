@@ -1,0 +1,86 @@
+spring:
+  application:
+    name: farmer-accounts
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/farmer_accounts}
+    username: ${DATABASE_USERNAME:farmer}
+    password: ${DATABASE_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DATABASE_POOL_SIZE:10}
+  flyway:
+    enabled: true
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  # Trust X-Forwarded-* from the TLS-terminating reverse proxy.
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  security:
+    # Reject plain-HTTP API calls (behind a proxy, X-Forwarded-Proto must be https).
+    require-https: ${REQUIRE_HTTPS:true}
+  jwt:
+    secret: ${JWT_SECRET:}
+    issuer: farmer-accounts
+    access-token-ttl: ${JWT_ACCESS_TTL:30m}
+    refresh-token-ttl: ${JWT_REFRESH_TTL:60d}
+  otp:
+    # The app currently uses phone + password accounts. Set OTP_ENABLED=true to switch the OTP
+    # endpoints back on (then an SMS provider and OTP_HMAC_SECRET are required).
+    enabled: ${OTP_ENABLED:false}
+    # console = log a notice only (development); http = generic HTTP SMS gateway (see README)
+    provider: ${OTP_PROVIDER:http}
+    hmac-secret: ${OTP_HMAC_SECRET:}
+    length: 6
+    ttl: 5m
+    max-verify-attempts: 5
+    max-sends-per-phone-window: 3
+    send-window: 15m
+    max-sends-per-phone-day: 10
+    max-sends-per-ip-hour: 30
+    test-mode-enabled: ${OTP_TEST_MODE:false}
+    # Comma separated +91XXXXXXXXXX=CODE pairs, only honoured when test-mode-enabled is true.
+    test-numbers: ${OTP_TEST_NUMBERS:}
+    message-template: ${OTP_MESSAGE_TEMPLATE:Your Farmer Accounts verification code is {code}. Valid for 5 minutes. Do not share it.}
+    http:
+      url: ${OTP_HTTP_URL:}
+      method: ${OTP_HTTP_METHOD:POST}
+      # Semicolon separated Name=Value headers, e.g. "Authorization=Bearer xyz;X-Sender=FARMAC"
+      headers: ${OTP_HTTP_HEADERS:}
+      content-type: ${OTP_HTTP_CONTENT_TYPE:application/json}
+      body-template: ${OTP_HTTP_BODY_TEMPLATE:{"to":"{phone}","message":"{message}"}}
+  login:
+    # Wrong passwords before the account is locked for `lockout`.
+    max-failed-attempts: 5
+    lockout: 15m
+  prices:
+    # Daily mandi prices (AGMARKNET) from India's Open Government Data platform. Get a free key at
+    # https://data.gov.in (My Account -> API key). Without a key the prices tab says "not available".
+    api-key: ${DATA_GOV_IN_API_KEY:}
+    url: ${PRICES_API_URL:https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070}
+    state: ${PRICES_STATE:Karnataka}
+    cache-ttl: ${PRICES_CACHE_TTL:3h}
+  admin:
+    cookie-secure: ${ADMIN_COOKIE_SECURE:true}
+    session-idle-timeout: ${ADMIN_SESSION_IDLE:30m}
+    session-absolute-timeout: ${ADMIN_SESSION_ABSOLUTE:12h}
+    max-failed-logins: 5
+    lockout: 15m
+    # Creates the first OWNER account only when no admin exists yet (see README).
+    bootstrap-username: ${ADMIN_BOOTSTRAP_USERNAME:}
+    bootstrap-password: ${ADMIN_BOOTSTRAP_PASSWORD:}

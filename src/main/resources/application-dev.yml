@@ -1,0 +1,13 @@
+# Local development only. Never enable this profile in production.
+app:
+  security:
+    require-https: false
+  jwt:
+    secret: ${JWT_SECRET:dev-only-jwt-secret-change-me-0123456789abcdef}
+  otp:
+    provider: ${OTP_PROVIDER:console}
+    hmac-secret: ${OTP_HMAC_SECRET:dev-only-otp-hmac-secret-0123456789abcdef}
+    test-mode-enabled: true
+    test-numbers: ${OTP_TEST_NUMBERS:+919999900001=123456,+919999900002=123456}
+  admin:
+    cookie-secure: false

@@ -1,0 +1,18 @@
+app:
+  security:
+    require-https: false
+  jwt:
+    secret: test-only-jwt-secret-0123456789abcdef0123456789
+  otp:
+    enabled: true
+    provider: console
+    hmac-secret: test-only-otp-hmac-secret-0123456789abcdef
+    test-mode-enabled: true
+    test-numbers: "+91999*=123456,+91888*=654321"
+  admin:
+    cookie-secure: false
+
+logging:
+  level:
+    root: WARN
+    com.farmeraccounts: INFO
