@@ -83,6 +83,17 @@ class WageCalculatorTest {
     }
 
     @Test
+    void skippedDaysEarnNothingAndAreNotAbsences() {
+        List<Day> days = new ArrayList<>(days(2, 0, 1));
+        days.add(new Day(START.plusDays(10), "SKIP"));
+        days.add(new Day(START.plusDays(11), "SKIP"));
+        Summary s = WageCalculator.summarize(days, List.of(), 600_00, List.of());
+        assertThat(s.earnedPaise()).isEqualTo(1_200_00);
+        assertThat(s.absentDays()).isEqualTo(1);
+        assertThat(s.skippedDays()).isEqualTo(2);
+    }
+
+    @Test
     void overpaymentIsShownAsNegativeBalance() {
         Summary s = WageCalculator.summarize(days(2, 0, 0), List.of(), 600_00, List.of(txn("ADVANCE", 2_000_00)));
         assertThat(s.pendingPaise()).isEqualTo(-800_00);

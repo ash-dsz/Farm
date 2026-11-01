@@ -1,6 +1,6 @@
 # Farm – backend
 
-Spring Boot API for the Farmer Accounts (ರೈತ ಲೆಕ್ಕ) app: farmer accounts (mobile number + password),
+Spring Boot API for the Farmora app: farmer accounts (mobile number + password),
 offline-first synchronisation, wage ledger, crop prices, and the platform owner's admin API with
 the global kill switch and farmer blocking.
 

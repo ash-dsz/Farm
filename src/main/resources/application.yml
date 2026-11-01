@@ -56,7 +56,7 @@ app:
     test-mode-enabled: ${OTP_TEST_MODE:false}
     # Comma separated +91XXXXXXXXXX=CODE pairs, only honoured when test-mode-enabled is true.
     test-numbers: ${OTP_TEST_NUMBERS:}
-    message-template: ${OTP_MESSAGE_TEMPLATE:Your Farmer Accounts verification code is {code}. Valid for 5 minutes. Do not share it.}
+    message-template: ${OTP_MESSAGE_TEMPLATE:Your Farmora verification code is {code}. Valid for 5 minutes. Do not share it.}
     http:
       url: ${OTP_HTTP_URL:}
       method: ${OTP_HTTP_METHOD:POST}

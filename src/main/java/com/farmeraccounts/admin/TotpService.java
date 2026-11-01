@@ -28,8 +28,8 @@ public class TotpService {
     }
 
     public String otpauthUri(String secret, String username) {
-        String label = URLEncoder.encode("Farmer Accounts Admin:" + username, StandardCharsets.UTF_8);
-        return "otpauth://totp/" + label + "?secret=" + secret + "&issuer=Farmer%20Accounts&digits=6&period=30";
+        String label = URLEncoder.encode("Farmora Admin:" + username, StandardCharsets.UTF_8);
+        return "otpauth://totp/" + label + "?secret=" + secret + "&issuer=Farmora&digits=6&period=30";
     }
 
     /** Accepts the current code and one step either side to allow for clock drift. */

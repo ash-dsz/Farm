@@ -97,7 +97,7 @@ public final class EntityModels {
                              @NotNull UUID farmId,
                              @NotNull UUID workerId,
                              @NotNull LocalDate date,
-                             @NotNull @Pattern(regexp = "PRESENT|HALF_DAY|ABSENT") String status,
+                             @NotNull @Pattern(regexp = "PRESENT|HALF_DAY|ABSENT|SKIP") String status,
                              Long serverVersion) implements Versioned<Attendance> {
         @Override
         public Attendance withVersion(Long v) {
@@ -148,12 +148,14 @@ public final class EntityModels {
                        @NotBlank @Size(max = 100) String buyerName,
                        @NotNull LocalDate date,
                        @Size(max = 1000) String notes,
+                       @Pattern(regexp = "CASH|UPI|NEFT") String paymentMethod,
+                       @Size(max = 100) String paymentReference,
                        boolean deleted,
                        Long serverVersion) implements Versioned<Sale> {
         @Override
         public Sale withVersion(Long v) {
             return new Sale(id, farmId, crop, quantity, unit, ratePaise, totalPaise, receivedPaise, buyerName, date,
-                    notes, deleted, v);
+                    notes, paymentMethod, paymentReference, deleted, v);
         }
     }
 }

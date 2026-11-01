@@ -104,11 +104,12 @@ public class AdminExportController {
                 SELECT x.*, u.phone AS farmer_phone FROM sales x JOIN users u ON u.id = x.farmer_id""" + FARMER_FILTER
                 + "ORDER BY u.phone, x.sale_date",
                 List.of("farmer_phone", "sale_id", "date", "crop", "quantity", "unit", "rate_rs", "total_rs",
-                        "received_rs", "pending_rs", "buyer", "notes", "deleted"),
+                        "received_rs", "pending_rs", "payment_method", "payment_reference", "buyer", "notes", "deleted"),
                 rs -> Arrays.asList(str(rs, "farmer_phone"), rs.getObject("id"), str(rs, "sale_date"), str(rs, "crop"),
                         str(rs, "quantity"), str(rs, "unit"), rupees(rs.getLong("rate_paise")),
                         rupees(rs.getLong("total_paise")), rupees(rs.getLong("received_paise")),
-                        rupees(rs.getLong("total_paise") - rs.getLong("received_paise")), str(rs, "buyer_name"),
+                        rupees(rs.getLong("total_paise") - rs.getLong("received_paise")), str(rs, "payment_method"),
+                        str(rs, "payment_reference"), str(rs, "buyer_name"),
                         str(rs, "notes"), rs.getTimestamp("deleted_at") != null)));
     }
 
@@ -143,7 +144,7 @@ public class AdminExportController {
     /** One line per worker with the totals recomputed from attendance and transactions. */
     private void writeLedger(PrintWriter out, UUID farmerId) {
         writeLine(out, List.of("farmer_phone", "worker_id", "worker", "active", "current_daily_wage_rs", "full_days",
-                "half_days", "absent_days", "earned_rs", "advances_rs", "settlements_rs", "adjustments_rs", "pending_rs"));
+                "half_days", "absent_days", "skipped_days", "earned_rs", "advances_rs", "settlements_rs", "adjustments_rs", "pending_rs"));
         record W(UUID id, String farmerPhone, String name, boolean active, long wage) {}
         List<W> workers = jdbc.sql("""
                 SELECT x.id, x.name, x.active, x.daily_wage_paise, u.phone FROM workers x JOIN users u ON u.id = x.farmer_id
@@ -155,7 +156,7 @@ public class AdminExportController {
         for (W w : workers) {
             Summary s = ledger.summarize(w.id(), w.wage(), null, null);
             writeLine(out, Arrays.asList(w.farmerPhone(), w.id(), w.name(), w.active(), rupees(w.wage()), s.fullDays(),
-                    s.halfDays(), s.absentDays(), rupees(s.earnedPaise()), rupees(s.advancesPaise()),
+                    s.halfDays(), s.absentDays(), s.skippedDays(), rupees(s.earnedPaise()), rupees(s.advancesPaise()),
                     rupees(s.settlementsPaise()), rupees(s.adjustmentsPaise()), rupees(s.pendingPaise())));
         }
     }

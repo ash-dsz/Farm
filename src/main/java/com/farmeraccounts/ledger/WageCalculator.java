@@ -12,7 +12,7 @@ import java.util.UUID;
  * Pure wage arithmetic, shared in spirit with the mobile app's wage.ts (keep the two in step).
  *
  * <pre>
- * earned  = sum over days of (Present = 1, Half day = 0.5, Absent = 0) x rate applicable on that day
+ * earned  = sum over days of (Present = 1, Half day = 0.5, Absent = Skip = 0) x rate applicable on that day
  * pending = earned - advances - settlements + adjustments
  * </pre>
  *
@@ -34,8 +34,9 @@ public final class WageCalculator {
 
     public record Txn(UUID id, LocalDate date, String type, long amountPaise, UUID reversesTransactionId) {}
 
+    /** skippedDays: days the worker was not expected (SKIP); neither worked nor absent. */
     public record Summary(int fullDays, int halfDays, int absentDays, long earnedPaise, long advancesPaise,
-                          long settlementsPaise, long adjustmentsPaise, long pendingPaise) {}
+                          long settlementsPaise, long adjustmentsPaise, long pendingPaise, int skippedDays) {}
 
     public static long rateOn(LocalDate day, List<Rate> rates, long fallbackDailyWagePaise) {
         if (rates.isEmpty()) {
@@ -57,6 +58,7 @@ public final class WageCalculator {
         int full = 0;
         int half = 0;
         int absent = 0;
+        int skipped = 0;
         long halfUnits = 0; // in half-paise
         for (Day d : days) {
             switch (d.status()) {
@@ -68,6 +70,7 @@ public final class WageCalculator {
                     half++;
                     halfUnits += rateOn(d.date(), rates, fallbackDailyWagePaise);
                 }
+                case "SKIP" -> skipped++;
                 default -> absent++;
             }
         }
@@ -94,6 +97,6 @@ public final class WageCalculator {
             }
         }
         long pending = earned - advances - settlements + adjustments;
-        return new Summary(full, half, absent, earned, advances, settlements, adjustments, pending);
+        return new Summary(full, half, absent, earned, advances, settlements, adjustments, pending, skipped);
     }
 }

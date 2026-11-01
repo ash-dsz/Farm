@@ -140,8 +140,11 @@ public final class RecordHandlers {
                     throw OpRejectedException.invalid("Total does not match quantity x rate");
                 }
             }
+            // A reference only makes sense for non-cash payments.
+            String method = s.receivedPaise() > 0 ? s.paymentMethod() : null;
+            String reference = method == null || "CASH".equals(method) ? null : clean(s.paymentReference());
             return new Sale(s.id(), s.farmId(), s.crop(), quantity, s.unit(), s.ratePaise(), s.totalPaise(),
-                    s.receivedPaise(), clean(s.buyerName()), s.date(), clean(s.notes()), s.deleted(), null);
+                    s.receivedPaise(), clean(s.buyerName()), s.date(), clean(s.notes()), method, reference, s.deleted(), null);
         }
 
         @Override
@@ -153,10 +156,12 @@ public final class RecordHandlers {
         protected void insert(SyncContext ctx, Sale s, long version) {
             support.jdbc().sql("""
                     INSERT INTO sales (id, farmer_id, farm_id, crop, quantity, unit, rate_paise, total_paise,
-                                       received_paise, buyer_name, sale_date, notes, deleted_at, server_version)
+                                       received_paise, buyer_name, sale_date, notes, payment_method, payment_reference,
+                                       deleted_at, server_version)
                     VALUES (:id, :farmer, :farm, :crop, :qty, :unit, :rate, :total, :received, :buyer, :date, :notes,
-                            CASE WHEN :deleted THEN now() ELSE NULL END, :v)
+                            :method, :reference, CASE WHEN :deleted THEN now() ELSE NULL END, :v)
                     """)
+                    .param("method", s.paymentMethod()).param("reference", s.paymentReference())
                     .param("id", s.id()).param("farmer", ctx.farmerId()).param("farm", s.farmId())
                     .param("crop", s.crop()).param("qty", s.quantity()).param("unit", s.unit())
                     .param("rate", s.ratePaise()).param("total", s.totalPaise()).param("received", s.receivedPaise())
@@ -170,10 +175,12 @@ public final class RecordHandlers {
             support.jdbc().sql("""
                     UPDATE sales SET crop = :crop, quantity = :qty, unit = :unit, rate_paise = :rate,
                         total_paise = :total, received_paise = :received, buyer_name = :buyer, sale_date = :date,
-                        notes = :notes, deleted_at = CASE WHEN :deleted THEN COALESCE(deleted_at, now()) ELSE NULL END,
+                        notes = :notes, payment_method = :method, payment_reference = :reference,
+                        deleted_at = CASE WHEN :deleted THEN COALESCE(deleted_at, now()) ELSE NULL END,
                         server_version = :v, updated_at = now()
                     WHERE id = :id
                     """)
+                    .param("method", s.paymentMethod()).param("reference", s.paymentReference())
                     .param("id", s.id()).param("crop", s.crop()).param("qty", s.quantity()).param("unit", s.unit())
                     .param("rate", s.ratePaise()).param("total", s.totalPaise()).param("received", s.receivedPaise())
                     .param("buyer", s.buyerName()).param("date", sqlDate(s.date())).param("notes", s.notes())
@@ -195,8 +202,8 @@ public final class RecordHandlers {
             return new Sale(rs.getObject("id", UUID.class), rs.getObject("farm_id", UUID.class), rs.getString("crop"),
                     clean(rs.getBigDecimal("quantity")), rs.getString("unit"), rs.getLong("rate_paise"),
                     rs.getLong("total_paise"), rs.getLong("received_paise"), rs.getString("buyer_name"),
-                    localDate(rs.getDate("sale_date")), rs.getString("notes"), rs.getTimestamp("deleted_at") != null,
-                    rs.getLong("server_version"));
+                    localDate(rs.getDate("sale_date")), rs.getString("notes"), rs.getString("payment_method"),
+                    rs.getString("payment_reference"), rs.getTimestamp("deleted_at") != null, rs.getLong("server_version"));
         }
     }
 }

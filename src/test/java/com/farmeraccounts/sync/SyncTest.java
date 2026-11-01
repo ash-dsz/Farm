@@ -102,6 +102,24 @@ class SyncTest extends IntegrationTest {
     }
 
     @Test
+    void skipIsAcceptedAndEarnsNothing() throws Exception {
+        Setup s = setupFarmWithWorker();
+        UUID id = UUID.randomUUID();
+        JsonNode r = pushOne(s.farmer(), op("attendance.upsert", id, null,
+                attendance(id, s.farmId(), s.workerId(), DAY, "SKIP")));
+        assertThat(r.get("status").asString()).isEqualTo("APPLIED");
+        JsonNode all = farmerGet(s.farmer(), "/api/workers/" + s.workerId() + "/ledger").body().get("allTime");
+        assertThat(all.get("earnedPaise").asLong()).isZero();
+        assertThat(all.get("skippedDays").asInt()).isEqualTo(1);
+        assertThat(all.get("absentDays").asInt()).isZero();
+
+        UUID bad = UUID.randomUUID();
+        assertThat(pushOne(s.farmer(), op("attendance.upsert", bad, null,
+                attendance(bad, s.farmId(), s.workerId(), DAY.minusDays(1), "HOLIDAY"))).get("code").asString())
+                .isEqualTo("VALIDATION_FAILED");
+    }
+
+    @Test
     void attendanceEditNeedsTheCurrentVersion() throws Exception {
         Setup s = setupFarmWithWorker();
         UUID id = UUID.randomUUID();
@@ -327,9 +345,31 @@ class SyncTest extends IntegrationTest {
         assertThat(pushOne(s.farmer(), op("sale.upsert", bad, null, wrong)).get("code").asString())
                 .isEqualTo("VALIDATION_FAILED");
 
-        // Recording the rest of the buyer payment is a versioned edit
+        // Recording the rest of the buyer payment is a versioned edit, with how it was paid
         sale.put("receivedPaise", 1_20_000_00);
+        sale.put("paymentMethod", "UPI");
+        sale.put("paymentReference", "  412398765432  ");
         long v = created.get("entity").get("serverVersion").asLong();
-        assertThat(pushOne(s.farmer(), op("sale.upsert", saleId, v, sale)).get("status").asString()).isEqualTo("APPLIED");
+        JsonNode paid = pushOne(s.farmer(), op("sale.upsert", saleId, v, sale));
+        assertThat(paid.get("status").asString()).isEqualTo("APPLIED");
+        assertThat(paid.get("entity").get("paymentMethod").asString()).isEqualTo("UPI");
+        assertThat(paid.get("entity").get("paymentReference").asString()).isEqualTo("412398765432");
+
+        sale.put("paymentMethod", "NEFT");
+        sale.put("paymentReference", null);
+        JsonNode neft = pushOne(s.farmer(), op("sale.upsert", saleId, paid.get("entity").get("serverVersion").asLong(), sale));
+        assertThat(neft.get("entity").get("paymentMethod").asString()).isEqualTo("NEFT");
+        assertThat(neft.get("entity").get("paymentReference").isNull()).isTrue();
+
+        // Cash never keeps a reference; unknown methods are refused
+        sale.put("paymentMethod", "CASH");
+        JsonNode cash = pushOne(s.farmer(), op("sale.upsert", saleId, neft.get("entity").get("serverVersion").asLong(), sale));
+        assertThat(cash.get("entity").get("paymentReference").isNull()).isTrue();
+        UUID other = UUID.randomUUID();
+        Map<String, Object> barter = new java.util.LinkedHashMap<>(sale);
+        barter.put("id", other.toString());
+        barter.put("paymentMethod", "BARTER");
+        assertThat(pushOne(s.farmer(), op("sale.upsert", other, null, barter)).get("code").asString())
+                .isEqualTo("VALIDATION_FAILED");
     }
 }
