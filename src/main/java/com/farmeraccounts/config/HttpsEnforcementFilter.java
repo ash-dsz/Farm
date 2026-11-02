@@ -28,7 +28,9 @@ public class HttpsEnforcementFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        if (requireHttps && !request.isSecure() && !"/actuator/health".equals(request.getRequestURI())) {
+        String requestUri = request.getRequestURI();
+        boolean healthCheck = "/actuator/health".equals(requestUri) || "/api/health".equals(requestUri);
+        if (requireHttps && !request.isSecure() && !healthCheck) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
             response.getWriter().write("{\"code\":\"HTTPS_REQUIRED\",\"message\":\"HTTPS is required\"}");

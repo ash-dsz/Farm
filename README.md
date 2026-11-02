@@ -17,6 +17,10 @@ the global kill switch and farmer blocking.
 
 ## Production
 
+The public health check is available at `GET /api/health` and returns `{"status":"UP"}` when
+the application and its health contributors are healthy; otherwise it returns HTTP 503 with the
+reported status.
+
 ```bash
 ./gradlew bootJar
 SPRING_PROFILES_ACTIVE=prod \

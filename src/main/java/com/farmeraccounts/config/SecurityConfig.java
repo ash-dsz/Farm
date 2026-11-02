@@ -46,8 +46,8 @@ import tools.jackson.databind.ObjectMapper;
  * Three independent filter chains:
  * <ol>
  *   <li>/api/admin/** - admin dashboard, cookie session (separate from farmer auth, never accepts farmer JWTs)</li>
- *   <li>/api/** - farmer API, stateless JWT + kill-switch access guard</li>
- *   <li>everything else - static admin UI and health check only</li>
+ *   <li>/api/** - farmer API, stateless JWT + kill-switch access guard, with a public health check</li>
+ *   <li>everything else - static admin UI and actuator health check only</li>
  * </ol>
  */
 @Configuration
@@ -124,6 +124,7 @@ public class SecurityConfig {
                 .logout(l -> l.disable())
                 .requestCache(r -> r.disable())
                 .authorizeHttpRequests(a -> a
+                        .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/otp/request", "/api/auth/otp/verify",
                                 "/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/logout").permitAll()
